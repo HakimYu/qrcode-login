@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Image from "next/image";
 
-const BASE_URL = "http://localhost:8080"; // 修改为你的域名
+const BASE_URL = "https://qrlogin.hakimyu.cn/api"; // 修改为你的域名
 
 const API_URLS = {
   fetchQRCode: `${BASE_URL}/getqrcode`,

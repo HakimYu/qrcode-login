@@ -1,65 +1,70 @@
 "use client";
-import { useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useState, Suspense } from "react";
 import Icon from "@mdi/react";
 import { mdiCog } from "@mdi/js";
 import axios from "axios";
-const BASE_URL = "http://192.168.100.100:8080"; // 修改为你的域名
+import { useSearchParams } from "next/navigation";
+
+const BASE_URL = "https://qrlogin.hakimyu.cn/api";
 
 const API_URLS = {
   login: `${BASE_URL}/login`,
 };
+
 export default function Phone() {
-  const [userID, setUserID] = useState<string>(() => {
-    return localStorage.getItem('userID') || '';
-  });
+  return (
+    <Suspense>
+      <Login />
+    </Suspense>
+  );
+}
+
+const Login = () => {
   const searchParams = useSearchParams();
   const uuid = searchParams.get("uuid") as string | undefined;
   const ip = searchParams.get("ip") as string | undefined;
-  useEffect(() => {
-    const storedUserID = localStorage.getItem("userID");
-    if (storedUserID) {
-      setUserID(storedUserID); // 从 localStorage 获取 userID
-    }
-  }, []); // 只在组件挂载时运行
 
   return (
     <>
       <SettingDialog />
       <div className="flex items-center justify-center min-h-screen">
-        <PhoneCheck uuid={uuid} userID={userID} ip={ip} />
+        <PhoneCheck uuid={uuid} ip={ip} />
       </div>
     </>
   );
-}
+};
 
 interface PhoneCheckProps {
   uuid: string | string[] | undefined;
-  userID: string | number;
   ip: string | undefined;
 }
 
-const PhoneCheck: React.FC<PhoneCheckProps> = ({ uuid, userID,ip }) => {
-  const [error, setError] = useState<boolean | null>(null); // error 状态类型
-const [success, setSuccess] = useState<boolean | null>(null);
+const PhoneCheck: React.FC<PhoneCheckProps> = ({ uuid, ip }) => {
+  const [error, setError] = useState<boolean | null>(null);
+  const [success, setSuccess] = useState<boolean | null>(null);
+
   const handleLogin = async () => {
+    const userID = localStorage.getItem("userID") || "";
+    if (userID === "") {
+      const dialog = document.getElementById("setting_dialog") as HTMLDialogElement;
+      dialog.showModal();
+      return;
+    }
     try {
       const response = await axios.post(API_URLS.login, {
-        uuid: uuid,
-        user_id: userID
+        uuid,
+        user_id: userID,
       }, {
         headers: {
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       });
 
-      const data = response.data;
-
       if (response.status !== 200) {
-        console.error(data.message || "登录失败");
+        console.error(response.data.message || "登录失败");
       } else {
         setSuccess(true);
-        console.log("登录成功:", data);
+        console.log("登录成功:", response.data);
       }
     } catch (err) {
       setError(true);
@@ -69,22 +74,21 @@ const [success, setSuccess] = useState<boolean | null>(null);
 
   return (
     <div className="flex items-center justify-center prose">
-      <div className="card w-screen h-screen sm:w-96 sm:h-auto bg-white dark:bg-gray-900 rounded-lg shadow-xl">
+      <div className="card w-screen h-screen **:w-96 **:h-auto bg-white dark:bg-gray-900 rounded-lg shadow-xl">
         <div className="card-body item-center">
           <div className="flex justify-end"><SettingBtn /></div>
-          {!success && <><h2 className="text-center mb-0">确认登录</h2>
+          {!success && <>
+            <h2 className="text-center mb-0">确认登录</h2>
             <p className="text-center max-h-10">IP：{ip}</p>
-        <button className="btn btn-primary btn-block" onClick={handleLogin}>确认登录</button></>
-        }
+            <button className="btn btn-primary btn-block" onClick={handleLogin}>确认登录</button>
+          </>}
           {success && <h2 className="text-center mb-0">登录成功</h2>}
           {error && <p className="text-red-500 text-center">{error}</p>}
-
-      </div>
+        </div>
       </div>
     </div>
   );
 };
-
 
 const SettingBtn = () => {
   return (
@@ -98,15 +102,13 @@ const SettingBtn = () => {
 };
 
 const SettingDialog = () => {
-  const [userID, setUserID] = useState<string>(() => {
-    return localStorage.getItem('userID') || ''; // 如果 localStorage 中没有值，则默认为空字符串
-  });
-  useEffect(() => {
-    localStorage.setItem('userID', userID);
-  }, [userID]);
+  const [userID, setUserID] = useState(localStorage.getItem("userID") || "");
+
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUserID(event.target.value);
+    localStorage.setItem("userID", event.target.value);
   };
+
   return (
     <dialog id="setting_dialog" className="modal">
       <div className="modal-box">
